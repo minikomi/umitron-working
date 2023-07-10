@@ -1,0 +1,45 @@
+services:
+  client:
+    build: ./frontend
+    tty: true
+    stdin_open: true
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./frontend:/frontend
+      - /frontend/node_modules
+  server:
+    build: ./backend
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./backend:/backend
+    env_file:
+      - ./backend/.env
+    depends_on:
+      client:
+        condition: service_started
+      db:
+        condition: service_healthy
+    command: go run main.go
+  db:
+    image: mysql:5.7.35
+    platform: linux/amd64
+    env_file:
+      - ./backend/.env
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./.data/mysql:/var/lib/mysql
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./logs:/var/log/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      timeout: 20s
+      retries: 10
+    cap_add:
+      - SYS_NICE
+    networks:
+      default:
+        aliases:
+          - mysql
