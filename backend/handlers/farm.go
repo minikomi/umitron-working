@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/umitron-mission/sw-farm-full-stack-coding-template/services"
@@ -40,4 +42,27 @@ func (h *FarmHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondOK(w, res)
+}
+
+func (h *FarmHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	farmID, err := parsePathID(r, "farmID")
+	if err != nil {
+		respondJSON(w, http.StatusBadRequest, map[string]string{"error": "Bad Request"})
+		return
+	}
+
+	f, err := h.farmService.GetByID(uint(farmID))
+	if err != nil {
+		if errors.Is(err, types.ErrNotFound) {
+			respondJSON(w, http.StatusNotFound, map[string]string{"error": fmt.Sprintf("Farm Not Found: %d", farmID)})
+			return
+		}
+		respondJSON(w, http.StatusInternalServerError, map[string]string{"error": types.ServerErrorMessage})
+		return
+	}
+
+	respondOK(w, &FarmResponse{
+		ID:   f.ID,
+		Name: f.Name,
+	})
 }

@@ -1,5 +1,4 @@
-
-export type Farm = {
+export type FarmResponse = {
   id: number;
   name: string;
-}
+};
